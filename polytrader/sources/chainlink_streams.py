@@ -28,13 +28,36 @@ class ChainlinkStreamsClient:
     Observed endpoints:
     - /api/query-timescale?query=LIVE_STREAM_REPORTS_QUERY&variables={"feedId":"0x..."}
 
-    Prices are returned as large integers; empirically BTC/USD appears scaled by 1e18.
-    (We treat values as 1e18 fixed-point unless otherwise configured.)
+    Notes:
+    - Some endpoints are more reliable if you send browser-like headers.
+    - Prices are returned as large integers; empirically BTC/USD appears scaled by 1e18.
+      (We treat values as 1e18 fixed-point unless otherwise configured.)
     """
 
-    def __init__(self, *, scale: float = 1e18):
+    def __init__(
+        self,
+        *,
+        scale: float = 1e18,
+        user_agent: str = (
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        ),
+        referer: str = "https://data.chain.link/streams/btc-usd",
+    ):
         self.scale = scale
-        self._client = httpx.AsyncClient(base_url=CHAINLINK_DATA, timeout=20.0)
+        self._client = httpx.AsyncClient(
+            base_url=CHAINLINK_DATA,
+            timeout=20.0,
+            headers={
+                "User-Agent": user_agent,
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "en-GB,en;q=0.9,en-US;q=0.8",
+                "Referer": referer,
+                "Origin": "https://data.chain.link",
+                "DNT": "1",
+                "Connection": "keep-alive",
+            },
+        )
 
     async def aclose(self) -> None:
         await self._client.aclose()
