@@ -74,7 +74,7 @@ class Store:
         with sqlite3.connect(self.path) as conn:
             conn.execute(
                 """
-                insert into opportunities values (?,?,?,?,?,?,?,?,?,?)
+                insert into opportunities values (?,?,?,?,?,?,?,?,?)
                 """,
                 (
                     ts,
@@ -85,7 +85,6 @@ class Store:
                     float(opp.suggested_fraction),
                     float(opp.quote.yes_price),
                     float(opp.fv.p_yes),
-                    float(opp.fv.confidence),
                     float(opp.fv.confidence),
                 ),
             )
