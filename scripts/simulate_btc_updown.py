@@ -363,6 +363,24 @@ async def simulate(
 
 
 if __name__ == "__main__":
-    # 60 minutes, bankroll = 0.002 BTC
-    p = asyncio.run(simulate(duration_minutes=60, bankroll_btc=0.002))
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--hours", type=float, default=1.0, help="How long to run the entry loop.")
+    ap.add_argument("--bankroll-btc", type=float, default=0.002, help="Starting bankroll in BTC.")
+    ap.add_argument("--stake-frac", type=float, default=0.06, help="Fraction of bankroll to stake per trade.")
+    ap.add_argument("--edge", type=float, default=0.02, help="Minimum edge threshold to enter.")
+    ap.add_argument("--no-settle-all", action="store_true", help="Do not wait to settle open trades.")
+    args = ap.parse_args()
+
+    mins = int(args.hours * 60)
+    p = asyncio.run(
+        simulate(
+            duration_minutes=mins,
+            bankroll_btc=args.bankroll_btc,
+            stake_frac=args.stake_frac,
+            edge_threshold=args.edge,
+            settle_all=not args.no_settle_all,
+        )
+    )
     print(str(p))
