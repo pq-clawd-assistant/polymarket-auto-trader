@@ -41,13 +41,20 @@ export POLYTRADER_MIN_EDGE=0.08
 export POLYTRADER_MODE=paper
 ```
 
+## Edge sources (started)
+
+Weather (NWS/NOAA):
+- `polytrader/sources/nws.py`: minimal `api.weather.gov` client
+- `polytrader/models/weather.py`: PoP-based proxy fair value for simple rain/precip questions
+- `POLYTRADER_LOCATIONS_FILE`: optional JSON mapping from location string → lat/lon
+  (see `polytrader/config/locations.example.json`)
+
+Sports + crypto are placeholders in the roadmap; we’ll add them once we pick concrete data sources.
+
 ## Next steps (you tell me what API you end up using)
 
 - Implement real `Exchange` adapter (market list, quotes/orderbook, place orders)
-- Add real fair value models per category:
-  - weather: NOAA/NWS feeds → probability mapping
-  - sports: injury reports + lines
-  - crypto: on-chain metrics + sentiment
+- Improve question parsing & market-specific resolution rules
 - Add execution safeguards: max slippage, min volume, per-market cooldown, daily stop-loss, etc.
 
 ## Safety

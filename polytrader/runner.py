@@ -8,7 +8,7 @@ from rich.console import Console
 from polytrader.adapters.paper import PaperExchange
 from polytrader.core.strategy import StrategyParams, find_opportunity
 from polytrader.core.types import Order
-from polytrader.models.fair_value import HeuristicBaseline
+from polytrader.models.router import RouterFairValueModel
 from polytrader.settings import settings
 from polytrader.storage.sqlite import Store
 
@@ -19,7 +19,7 @@ console = Console()
 async def run_once() -> None:
     # TODO: swap based on settings.mode/exchange
     ex = PaperExchange()
-    model = HeuristicBaseline()
+    model = RouterFairValueModel()
     store = Store()
 
     markets = await ex.list_markets(limit=settings.max_markets)

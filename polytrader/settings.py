@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     # Scheduler
     interval_seconds: int = 600
 
+    # Edge sources (weather)
+    nws_user_agent: str = "polytrader/0.1 (contact: you@example.com)"
+    locations_file: str | None = None  # path to JSON mapping of location->lat/lon
+
     # Strategy thresholds
     min_edge: float = 0.08  # 8% by default
     max_position_fraction: float = 0.06  # 6% cap (you can lower)
