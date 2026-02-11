@@ -14,8 +14,8 @@ class PaperExchange(Exchange):
 
     def __init__(self):
         self._markets = [
-            Market(id="demo-1", question="Will it rain tomorrow?", category="weather", close_time=None),
-            Market(id="demo-2", question="Will Team A win?", category="sports", close_time=None),
+            Market(id="demo-1", question="Will it rain tomorrow?", category="weather", start_time=None, close_time=None),
+            Market(id="demo-2", question="Will Team A win?", category="sports", start_time=None, close_time=None),
         ]
         self._quotes = {
             "demo-1": MarketQuote(market_id="demo-1", yes_price=0.40, no_price=0.60, liquidity_usd=1000),

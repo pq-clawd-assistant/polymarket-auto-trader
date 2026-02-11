@@ -95,8 +95,10 @@ class PolymarketPublicExchange(Exchange):
                     continue
 
                 clob_ids = m.get("clobTokenIds")
-                # docs show clobTokenIds as list[str]
+                # docs show clobTokenIds as list[str], but the API sometimes returns a JSON string.
                 yes_id = no_id = None
+                if isinstance(clob_ids, str):
+                    clob_ids = _parse_json_array(clob_ids)
                 if isinstance(clob_ids, list) and len(clob_ids) >= 2:
                     if isinstance(clob_ids[0], str) and isinstance(clob_ids[1], str):
                         yes_id, no_id = clob_ids[0], clob_ids[1]
@@ -121,12 +123,29 @@ class PolymarketPublicExchange(Exchange):
 
                 self._meta[mid] = PolyMarketMeta(yes_token_id=yes_id, no_token_id=no_id, liquidity=liquidity)
 
+                # start/end times
+                start_time = None
+                end_time = None
+                # Many markets include event startTime nested in events.
+                if isinstance(ev.get("startTime"), str):
+                    try:
+                        start_time = datetime.fromisoformat(ev["startTime"].replace("Z", "+00:00")).astimezone(timezone.utc)
+                    except Exception:
+                        start_time = None
+                # Market endDate is commonly present.
+                if isinstance(m.get("endDate"), str):
+                    try:
+                        end_time = datetime.fromisoformat(m["endDate"].replace("Z", "+00:00")).astimezone(timezone.utc)
+                    except Exception:
+                        end_time = None
+
                 out.append(
                     Market(
                         id=mid,
                         question=question,
                         category=str(category) if category is not None else None,
-                        close_time=None,
+                        start_time=start_time,
+                        close_time=end_time,
                         outcomes=("YES", "NO"),
                     )
                 )

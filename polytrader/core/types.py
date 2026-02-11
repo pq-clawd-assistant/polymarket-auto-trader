@@ -13,7 +13,8 @@ class Market:
     id: str
     question: str
     category: str | None
-    close_time: datetime | None
+    start_time: datetime | None = None
+    close_time: datetime | None = None
     outcomes: tuple[str, ...] = ("YES", "NO")
 
 
