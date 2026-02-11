@@ -9,6 +9,7 @@ from pathlib import Path
 import httpx
 
 from polytrader.sources.chainlink_streams import ChainlinkStreamsClient
+from polytrader.sources.binance import realized_vol_from_closes
 
 GAMMA = "https://gamma-api.polymarket.com"
 SERIES_ID = 10192  # BTC up-or-down 15m
