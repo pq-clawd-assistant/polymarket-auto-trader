@@ -13,6 +13,10 @@ This is **not** a profit machine. It’s a scaffold you can run elsewhere and wi
 - SQLite logging (`polytrader.db`)
 - CLI runner
 
+## Requirements
+
+- Python 3.11+
+
 ## Install
 
 ```bash
