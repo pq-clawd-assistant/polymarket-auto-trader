@@ -49,7 +49,11 @@ Weather (NWS/NOAA):
 - `POLYTRADER_LOCATIONS_FILE`: optional JSON mapping from location string → lat/lon
   (see `polytrader/config/locations.example.json`)
 
-Sports + crypto are placeholders in the roadmap; we’ll add them once we pick concrete data sources.
+Sports + crypto (free sources added as signals):
+- `polytrader/sources/espn.py` + `polytrader/models/sports_signals.py`: scoreboard snapshots (major leagues)
+- `polytrader/sources/coingecko.py`, `defillama.py`, `feargreed.py` + `polytrader/models/crypto_signals.py`: basic crypto signals
+
+These currently produce *signals*; turning them into per-market probabilities depends on how Polymarket words and resolves each market.
 
 ## Next steps (you tell me what API you end up using)
 
