@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # Optional focus filter (simple substring match against question)
     focus_query: str | None = None
 
+    # Optional Gamma filters (recommended for recurring series like BTC up/down)
+    gamma_series_id: int | None = None
+
     # LLM (optional)
     llm_provider: str | None = None  # e.g. "anthropic" / "openai"
     llm_api_key: str | None = None
