@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Data universe
     max_markets: int = 1000
 
+    # Optional focus filter (simple substring match against question)
+    focus_query: str | None = None
+
     # LLM (optional)
     llm_provider: str | None = None  # e.g. "anthropic" / "openai"
     llm_api_key: str | None = None

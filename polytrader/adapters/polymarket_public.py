@@ -20,6 +20,8 @@ class PolyMarketMeta:
     yes_token_id: str
     no_token_id: str
     liquidity: float | None = None
+    gamma_yes_price: float | None = None
+    gamma_no_price: float | None = None
 
 
 def _parse_json_array(s: str) -> list[Any]:
@@ -103,11 +105,19 @@ class PolymarketPublicExchange(Exchange):
                     if isinstance(clob_ids[0], str) and isinstance(clob_ids[1], str):
                         yes_id, no_id = clob_ids[0], clob_ids[1]
 
-                # fallback: parse outcomes/outcomePrices if present
+                # Parse outcomes/outcomePrices (Gamma provides these as JSON strings)
                 outcomes = m.get("outcomes")
                 outcome_prices = m.get("outcomePrices")
                 outcomes_arr = _parse_json_array(outcomes) if isinstance(outcomes, str) else []
                 prices_arr = _parse_json_array(outcome_prices) if isinstance(outcome_prices, str) else []
+
+                gamma_yes = gamma_no = None
+                try:
+                    if len(prices_arr) >= 2:
+                        gamma_yes = float(prices_arr[0])
+                        gamma_no = float(prices_arr[1])
+                except Exception:
+                    gamma_yes = gamma_no = None
 
                 # If token ids are missing, we can still quote from outcomePrices by returning synthetic ids.
                 if not (yes_id and no_id):
@@ -121,7 +131,13 @@ class PolymarketPublicExchange(Exchange):
                         liquidity = float(v)
                         break
 
-                self._meta[mid] = PolyMarketMeta(yes_token_id=yes_id, no_token_id=no_id, liquidity=liquidity)
+                self._meta[mid] = PolyMarketMeta(
+                    yes_token_id=yes_id,
+                    no_token_id=no_id,
+                    liquidity=liquidity,
+                    gamma_yes_price=gamma_yes,
+                    gamma_no_price=gamma_no,
+                )
 
                 # start/end times
                 start_time = None
@@ -139,6 +155,11 @@ class PolymarketPublicExchange(Exchange):
                     except Exception:
                         end_time = None
 
+                # outcomes
+                outs = None
+                if len(outcomes_arr) >= 2:
+                    outs = (str(outcomes_arr[0]), str(outcomes_arr[1]))
+
                 out.append(
                     Market(
                         id=mid,
@@ -146,7 +167,7 @@ class PolymarketPublicExchange(Exchange):
                         category=str(category) if category is not None else None,
                         start_time=start_time,
                         close_time=end_time,
-                        outcomes=("YES", "NO"),
+                        outcomes=outs or ("YES", "NO"),
                     )
                 )
 
@@ -173,19 +194,29 @@ class PolymarketPublicExchange(Exchange):
             if not meta:
                 continue
 
-            # If token ids are synthetic gamma:* then we can't query CLOB.
-            if meta.yes_token_id.startswith("gamma:"):
-                # no quote; skip
-                continue
+            yes: float | None = None
+            no: float | None = None
 
-            yes = await self._clob_price(meta.yes_token_id)
-            no = await self._clob_price(meta.no_token_id)
+            # Try CLOB first if token ids look real.
+            if not meta.yes_token_id.startswith("gamma:"):
+                yes = await self._clob_price(meta.yes_token_id)
+                no = await self._clob_price(meta.no_token_id)
+
+            # Fallback to Gamma outcomePrices when CLOB is unavailable/restricted.
+            if yes is None or no is None:
+                if meta.gamma_yes_price is not None and meta.gamma_no_price is not None:
+                    yes, no = meta.gamma_yes_price, meta.gamma_no_price
+
             if yes is None or no is None:
                 continue
 
-            # Theoretically yes+no ~= 1; keep as-is but clamp.
-            yes = max(0.0, min(1.0, yes))
-            no = max(0.0, min(1.0, no))
+            yes = max(0.0, min(1.0, float(yes)))
+            no = max(0.0, min(1.0, float(no)))
+
+            # If CLOB returned nonsense zeros but Gamma has values, prefer Gamma.
+            if (yes < 0.01 or no < 0.01) and meta.gamma_yes_price is not None and meta.gamma_no_price is not None:
+                yes = max(0.0, min(1.0, float(meta.gamma_yes_price)))
+                no = max(0.0, min(1.0, float(meta.gamma_no_price)))
 
             out.append(
                 MarketQuote(

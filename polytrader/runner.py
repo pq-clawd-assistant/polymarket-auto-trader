@@ -29,6 +29,10 @@ async def run_once() -> None:
 
     markets = await ex.list_markets(limit=settings.max_markets)
 
+    if settings.focus_query:
+        q = settings.focus_query.lower()
+        markets = [m for m in markets if q in m.question.lower()]
+
     # Record start prices for interval-style markets when we are near the boundary.
     try:
         await record_start_prices(markets)
