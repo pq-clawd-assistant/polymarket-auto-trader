@@ -5,6 +5,7 @@ from pathlib import Path
 
 from polytrader.core.types import FairValue, Market
 from polytrader.models.fair_value import FairValueModel, HeuristicBaseline
+from polytrader.models.btc_15m import Btc15mUpDownFairValue, parse_btc_15m_direction
 from polytrader.models.btc_threshold import BtcAboveBelowFairValue, parse_btc_threshold_question
 from polytrader.models.weather import NwsRainFairValue
 from polytrader.sources.nws import LocationResolver, NwsPoint, parse_weather_question
@@ -45,9 +46,12 @@ class RouterFairValueModel(FairValueModel):
             vol_lookback_days=settings.btc_vol_lookback_days,
             drift_mu=settings.btc_drift_mu,
         )
+        self._btc15m = Btc15mUpDownFairValue(lookback_minutes=settings.btc_15m_lookback_minutes)
         self._baseline = HeuristicBaseline()
 
     async def estimate(self, market: Market) -> FairValue:
+        if parse_btc_15m_direction(market.question):
+            return await self._btc15m.estimate(market)
         if parse_btc_threshold_question(market.question):
             return await self._btc.estimate(market)
         if parse_weather_question(market.question):

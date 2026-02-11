@@ -66,6 +66,10 @@ Bitcoin price threshold markets (above/below by date):
   CoinGecko spot + realized volatility (GBM baseline)
 - Settings: `POLYTRADER_BTC_VOL_LOOKBACK_DAYS`, `POLYTRADER_BTC_DRIFT_MU`
 
+Bitcoin 15-minute direction (up/down):
+- `polytrader/models/btc_15m.py`: parses BTC up/down in 15 minutes and uses Binance 1m candles to estimate short-horizon volatility.
+- Setting: `POLYTRADER_BTC_15M_LOOKBACK_MINUTES`
+
 Sports + crypto (free sources added as signals):
 - `polytrader/sources/espn.py` + `polytrader/models/sports_signals.py`: scoreboard snapshots (major leagues)
 - `polytrader/sources/coingecko.py`, `defillama.py`, `feargreed.py` + `polytrader/models/crypto_signals.py`: basic crypto signals

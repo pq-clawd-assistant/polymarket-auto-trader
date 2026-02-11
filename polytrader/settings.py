@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     btc_vol_lookback_days: int = 30
     btc_drift_mu: float = 0.0
 
+    btc_15m_lookback_minutes: int = 240
+
     # Strategy thresholds
     min_edge: float = 0.08  # 8% by default
     max_position_fraction: float = 0.06  # 6% cap (you can lower)
