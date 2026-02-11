@@ -58,9 +58,9 @@ class PolymarketPublicExchange(Exchange):
         await self._clob.aclose()
 
     async def list_markets(self, limit: int) -> list[Market]:
-        # Pull events including embedded markets.
+        # Pull markets directly (better coverage for recurring markets).
         r = await self._gamma.get(
-            "/events",
+            "/markets",
             params={
                 "active": "true",
                 "closed": "false",
@@ -68,33 +68,29 @@ class PolymarketPublicExchange(Exchange):
             },
         )
         r.raise_for_status()
-        events = r.json()
-        if not isinstance(events, list):
+        rows = r.json()
+        if not isinstance(rows, list):
             return []
 
         out: list[Market] = []
         self._meta.clear()
 
-        for ev in events:
-            if not isinstance(ev, dict):
+        for m in rows:
+            if not isinstance(m, dict):
                 continue
-            tags = ev.get("tags")
-            category = None
-            if isinstance(tags, list) and tags:
-                t0 = tags[0]
-                if isinstance(t0, dict):
-                    category = t0.get("label") or t0.get("slug")
+            mid = m.get("id")
+            question = m.get("question")
+            if not (isinstance(mid, str) and isinstance(question, str)):
+                continue
 
-            markets = ev.get("markets")
-            if not isinstance(markets, list):
-                continue
-            for m in markets:
-                if not isinstance(m, dict):
-                    continue
-                mid = m.get("id")
-                question = m.get("question")
-                if not (isinstance(mid, str) and isinstance(question, str)):
-                    continue
+            # category/tag
+            category = None
+            events = m.get("events")
+            if isinstance(events, list) and events:
+                ev0 = events[0]
+                tags = ev0.get("tags") if isinstance(ev0, dict) else None
+                if isinstance(tags, list) and tags and isinstance(tags[0], dict):
+                    category = tags[0].get("label") or tags[0].get("slug")
 
                 clob_ids = m.get("clobTokenIds")
                 # docs show clobTokenIds as list[str], but the API sometimes returns a JSON string.
@@ -142,12 +138,14 @@ class PolymarketPublicExchange(Exchange):
                 # start/end times
                 start_time = None
                 end_time = None
-                # Many markets include event startTime nested in events.
-                if isinstance(ev.get("startTime"), str):
-                    try:
-                        start_time = datetime.fromisoformat(ev["startTime"].replace("Z", "+00:00")).astimezone(timezone.utc)
-                    except Exception:
-                        start_time = None
+                # eventStartTime on market (for recurring intervals)
+                for k in ("eventStartTime", "startTime"):
+                    if isinstance(m.get(k), str):
+                        try:
+                            start_time = datetime.fromisoformat(m[k].replace("Z", "+00:00")).astimezone(timezone.utc)
+                            break
+                        except Exception:
+                            start_time = None
                 # Market endDate is commonly present.
                 if isinstance(m.get("endDate"), str):
                     try:
