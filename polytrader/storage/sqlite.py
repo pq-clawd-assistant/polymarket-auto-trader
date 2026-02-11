@@ -13,6 +13,22 @@ class Store:
         self.path = Path(path)
         self._init()
 
+    def get_start_price(self, market_id: str, start_time_iso: str) -> float | None:
+        with sqlite3.connect(self.path) as conn:
+            cur = conn.execute(
+                "select price from start_prices where market_id=? and start_time=?",
+                (market_id, start_time_iso),
+            )
+            row = cur.fetchone()
+            return float(row[0]) if row else None
+
+    def set_start_price(self, market_id: str, start_time_iso: str, price: float, source: str) -> None:
+        with sqlite3.connect(self.path) as conn:
+            conn.execute(
+                "insert or replace into start_prices values (?,?,?,?)",
+                (market_id, start_time_iso, float(price), source),
+            )
+
     def _init(self) -> None:
         with sqlite3.connect(self.path) as conn:
             conn.execute(
@@ -38,6 +54,17 @@ class Store:
                   implied_yes real,
                   fv_yes real,
                   confidence real
+                );
+                """
+            )
+            conn.execute(
+                """
+                create table if not exists start_prices (
+                  market_id text,
+                  start_time text,
+                  price real,
+                  source text,
+                  primary key (market_id, start_time)
                 );
                 """
             )

@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from polytrader.core.types import FairValue, Market
 from polytrader.models.fair_value import FairValueModel
 from polytrader.sources.binance import BinanceClient, parse_klines, realized_vol_from_closes
+from polytrader.sources.chainlink_streams import ChainlinkStreamsClient, latest_price
+from polytrader.storage.sqlite import Store
 
 
 @dataclass(frozen=True)
@@ -26,6 +28,9 @@ def is_btc_updown_15m_market(market: Market) -> bool:
         # Gamma calls them Up/Down; we still accept if two outcomes.
         pass
     return bool(_UPDOWN_RE.search(market.question))
+
+
+BTC_USD_CHAINLINK_FEED_ID = "0x00039d9e45394f473ab1f050a1b963e6b05351e52d71e507509ada0c95ed75b8"
 
 
 class BtcUpDownIntervalFairValue(FairValueModel):
@@ -55,7 +60,43 @@ class BtcUpDownIntervalFairValue(FairValueModel):
         if now >= market.close_time:
             return FairValue(market_id=market.id, p_yes=0.5, confidence=0.0, rationale="ended")
 
-        # Pull recent 1m candles.
+        store = Store()
+        start_iso = market.start_time.astimezone(timezone.utc).isoformat()
+
+        # Prefer Chainlink stream as the settlement source.
+        cl = ChainlinkStreamsClient()
+        try:
+            live = await latest_price(cl, BTC_USD_CHAINLINK_FEED_ID)
+        finally:
+            await cl.aclose()
+
+        spot = live.price if live else None
+
+        # Start price: if we were running at the start, it should be recorded.
+        start_px = store.get_start_price(market.id, start_iso)
+
+        # Fallbacks:
+        # - if start is very recent (<30m), approximate with Binance candle open at/after start
+        if start_px is None:
+            # Pull recent 1m candles.
+            bc = BinanceClient()
+            try:
+                rows = await bc.klines(symbol="BTCUSDT", interval="1m", limit=1000)
+                candles = parse_klines(rows)
+            finally:
+                await bc.aclose()
+
+            if len(candles) >= 50:
+                for c in candles:
+                    if c.open_time >= market.start_time:
+                        start_px = c.open
+                        break
+                start_px = start_px or candles[0].open
+
+        if spot is None or start_px is None:
+            return FairValue(market_id=market.id, p_yes=0.5, confidence=0.1, rationale="missing spot/start")
+
+        # For vol, still use Binance 1m candles.
         bc = BinanceClient()
         try:
             rows = await bc.klines(symbol="BTCUSDT", interval="1m", limit=1000)
@@ -65,19 +106,6 @@ class BtcUpDownIntervalFairValue(FairValueModel):
 
         if len(candles) < 50:
             return FairValue(market_id=market.id, p_yes=0.5, confidence=0.1, rationale="insufficient candles")
-
-        # Estimate start price using the candle open at/just after start_time.
-        start_px = None
-        for c in candles:
-            if c.open_time >= market.start_time:
-                start_px = c.open
-                break
-        if start_px is None:
-            # If our candle window doesn't go back far enough, use earliest.
-            start_px = candles[0].open
-
-        # Spot now
-        spot = candles[-1].close
 
         # Remaining time horizon
         remaining_seconds = max(1.0, (market.close_time - now).total_seconds())
@@ -106,8 +134,8 @@ class BtcUpDownIntervalFairValue(FairValueModel):
         p_yes = p_up
 
         rationale = (
-            f"Binance BTCUSDT proxy; start={start_px:.2f}, spot={spot:.2f}, "
-            f"rem={remaining_seconds/60:.1f}m, sigma~{sigma_ann:.2f}ann"
+            f"Chainlink live spot={spot:.2f}; start={start_px:.2f} (recorded if available; fallback=Binance); "
+            f"rem={remaining_seconds/60:.1f}m; sigma~{sigma_ann:.2f}ann"
         )
         confidence = 0.30
         return FairValue(market_id=market.id, p_yes=p_yes, confidence=confidence, rationale=rationale)

@@ -8,6 +8,7 @@ from rich.console import Console
 from polytrader.adapters.paper import PaperExchange
 from polytrader.adapters.polymarket_public import PolymarketPublicExchange
 from polytrader.core.strategy import StrategyParams, find_opportunity
+from polytrader.core.recorders import record_start_prices
 from polytrader.core.types import Order
 from polytrader.models.router import RouterFairValueModel
 from polytrader.settings import settings
@@ -27,6 +28,13 @@ async def run_once() -> None:
     store = Store()
 
     markets = await ex.list_markets(limit=settings.max_markets)
+
+    # Record start prices for interval-style markets when we are near the boundary.
+    try:
+        await record_start_prices(markets)
+    except Exception:
+        pass
+
     quotes = await ex.get_quotes([m.id for m in markets])
     q_by_id = {q.market_id: q for q in quotes}
 
