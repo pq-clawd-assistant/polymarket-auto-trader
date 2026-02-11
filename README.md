@@ -61,6 +61,11 @@ Weather (NWS/NOAA):
 - `POLYTRADER_LOCATIONS_FILE`: optional JSON mapping from location string → lat/lon
   (see `polytrader/config/locations.example.json`)
 
+Bitcoin price threshold markets (above/below by date):
+- `polytrader/models/btc_threshold.py`: parses BTC above/below $K by YYYY-MM-DD markets and estimates probability using
+  CoinGecko spot + realized volatility (GBM baseline)
+- Settings: `POLYTRADER_BTC_VOL_LOOKBACK_DAYS`, `POLYTRADER_BTC_DRIFT_MU`
+
 Sports + crypto (free sources added as signals):
 - `polytrader/sources/espn.py` + `polytrader/models/sports_signals.py`: scoreboard snapshots (major leagues)
 - `polytrader/sources/coingecko.py`, `defillama.py`, `feargreed.py` + `polytrader/models/crypto_signals.py`: basic crypto signals

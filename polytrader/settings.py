@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     nws_user_agent: str = "polytrader/0.1 (contact: you@example.com)"
     locations_file: str | None = None  # path to JSON mapping of location->lat/lon
 
+    # Edge sources (crypto)
+    btc_vol_lookback_days: int = 30
+    btc_drift_mu: float = 0.0
+
     # Strategy thresholds
     min_edge: float = 0.08  # 8% by default
     max_position_fraction: float = 0.06  # 6% cap (you can lower)
