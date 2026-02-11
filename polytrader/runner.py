@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from rich.console import Console
 
 from polytrader.adapters.paper import PaperExchange
+from polytrader.adapters.polymarket_public import PolymarketPublicExchange
 from polytrader.core.strategy import StrategyParams, find_opportunity
 from polytrader.core.types import Order
 from polytrader.models.router import RouterFairValueModel
@@ -17,8 +18,11 @@ console = Console()
 
 
 async def run_once() -> None:
-    # TODO: swap based on settings.mode/exchange
-    ex = PaperExchange()
+    # Swap exchange adapter based on settings.exchange
+    if settings.exchange == "polymarket-public":
+        ex = PolymarketPublicExchange(user_agent=settings.nws_user_agent)
+    else:
+        ex = PaperExchange()
     model = RouterFairValueModel()
     store = Store()
 
@@ -57,8 +61,8 @@ async def run_once() -> None:
             f"implied_yes={opp.quote.yes_price:.3f} fv_yes={opp.fv.p_yes:.3f} ({opp.market.question})"
         )
 
-    # Auto-execute in paper mode for now
-    if settings.mode == "paper":
+    # Auto-execute only when the exchange supports it.
+    if settings.mode == "paper" and settings.exchange == "paper":
         for opp in opps[:3]:
             if opp.suggested_fraction <= 0:
                 continue

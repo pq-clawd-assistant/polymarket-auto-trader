@@ -32,8 +32,12 @@ class Settings(BaseSettings):
     # Execution mode
     mode: str = "paper"  # paper | live
 
+    # Exchange selection
+    # - "paper": internal stub exchange
+    # - "polymarket-public": read-only Gamma+CLOB adapter (dry-run decisions against real markets)
+    exchange: str = "paper"
+
     # Live trading adapter (to be wired)
-    exchange: str = "polymarket"  # placeholder
     api_base_url: str | None = None
     api_key: str | None = None
 

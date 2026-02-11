@@ -33,6 +33,18 @@ polytrader once
 polytrader run
 ```
 
+## Dry run against real Polymarket markets (no trading)
+
+This uses **Gamma + public CLOB** endpoints to fetch active markets and current token prices.
+It does **not** place orders.
+
+```bash
+export POLYTRADER_EXCHANGE=polymarket-public
+export POLYTRADER_MODE=paper
+export POLYTRADER_MAX_MARKETS=200
+polytrader once
+```
+
 Configuration via env vars (prefix `POLYTRADER_`), e.g.
 
 ```bash
